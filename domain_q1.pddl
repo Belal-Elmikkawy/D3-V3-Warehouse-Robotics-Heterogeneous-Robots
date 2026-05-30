@@ -50,6 +50,7 @@
 
     ;; --- adjacency / reachability ---
     (connected      ?l1 - location ?l2 - location)
+    (transit-area   ?l - location)  ; Only transport-robots can enter these areas
 
     ;; --- robot availability ---
     (robot-free     ?r - robot)           ; robot has no current task
@@ -147,6 +148,7 @@
       (robot-at   ?r ?l1)
       (connected  ?l1 ?l2)
       (robot-free ?r)
+      (not (transit-area ?l2))
     )
     :effect (and
       (robot-at     ?r ?l2)
