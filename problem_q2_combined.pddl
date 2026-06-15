@@ -15,14 +15,17 @@
   
   (:init
     (manip-at       manip1        zone-A)
+    (occupied       zone-A)       ;; ADD THIS
     (manip-free     manip1)
     (gripper-empty  manip1)
 
     (manip-at       manip2        zone-C)
+    (occupied       zone-C)       ;; ADD THIS
     (manip-free     manip2)
     (gripper-empty  manip2)
 
     (transport-at   transport1    handoff-point)
+    (occupied       handoff-point) ;; ADD THIS
     (transport-free transport1)
     (platform-empty transport1)
 

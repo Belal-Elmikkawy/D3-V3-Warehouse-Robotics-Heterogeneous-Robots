@@ -32,6 +32,9 @@
 
     (connected      ?l1 - location ?l2 - location)
     (transit-area   ?l - location)
+    
+    ;; Added for Multi-Agent Mutual Exclusion
+    (occupied       ?l - location)
 
     (manip-free     ?r - manip-robot)
     (transport-free ?r - transport-robot)
@@ -71,10 +74,12 @@
     :parameters (?r  - manip-robot
                  ?tr - transport-robot
                  ?p  - package
-                 ?l  - location)
+                 ?l1 - location
+                 ?l2 - location)
     :precondition (and
-      (manip-at      ?r  ?l)
-      (transport-at  ?tr ?l)
+      (manip-at      ?r  ?l1)
+      (transport-at  ?tr ?l2)
+      (connected     ?l1 ?l2)
       (manip-holding ?r  ?p)
       (platform-empty ?tr)
     )
@@ -90,10 +95,12 @@
     :parameters (?r  - manip-robot
                  ?tr - transport-robot
                  ?p  - package
-                 ?l  - location)
+                 ?l1 - location
+                 ?l2 - location)
     :precondition (and
-      (manip-at           ?r  ?l)
-      (transport-at       ?tr ?l)
+      (manip-at           ?r  ?l1)
+      (transport-at       ?tr ?l2)
+      (connected          ?l1 ?l2)
       (transport-carrying ?tr ?p)
       (gripper-empty      ?r)
     )
@@ -112,10 +119,13 @@
       (connected  ?l1 ?l2)
       (manip-free ?r)
       (not (transit-area ?l2))
+      (not (occupied ?l2)) ; Ensures location is physically free
     )
     :effect (and
       (manip-at     ?r ?l2)
       (not (manip-at ?r ?l1))
+      (occupied     ?l2)
+      (not (occupied ?l1))
     )
   )
 
@@ -125,10 +135,13 @@
       (transport-at  ?r ?l1)
       (connected ?l1 ?l2)
       (transport-free ?r)
+      (not (occupied ?l2)) ; Ensures location is physically free
     )
     :effect (and
       (transport-at     ?r ?l2)
       (not (transport-at ?r ?l1))
+      (occupied     ?l2)
+      (not (occupied ?l1))
     )
   )
 

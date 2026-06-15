@@ -11,7 +11,7 @@
     :equality
     :time
     :continuous-effects
-    :fluents
+    :numeric-fluents
   )
 
   (:types
@@ -38,12 +38,13 @@
     (gripper-empty  ?r - manip-robot)
     (platform-empty ?r - transport-robot)
     
-    ;; New predicate to track active transfer
-    (transferring ?m - manip-robot ?t - transport-robot ?p - package ?l - location)
+    (occupied ?l - location) 
+    
+    (transferring ?m - manip-robot ?t - transport-robot ?p - package ?l1 - location ?l2 - location)
   )
 
   (:functions
-    ;; Tracks the progress of the transfer (0 to 100)
+    
     (transfer-progress ?p - package)
   )
 
@@ -80,17 +81,18 @@
   ;; Initiates the continuous transfer process between robots.
   ;; ============================================================
   (:action start-transfer
-    :parameters (?m  - manip-robot ?tr - transport-robot ?p  - package ?l  - location)
+    :parameters (?m  - manip-robot ?tr - transport-robot ?p  - package ?l1  - location ?l2 - location)
     :precondition (and
-      (manip-at      ?m  ?l)
-      (transport-at  ?tr ?l)
+      (manip-at      ?m  ?l1)
+      (transport-at  ?tr ?l2)
+      (connected     ?l1 ?l2)
       (manip-holding ?m  ?p)
       (platform-empty ?tr)
-      (not (transferring ?m ?tr ?p ?l))
+      (not (transferring ?m ?tr ?p ?l1 ?l2))
       (= (transfer-progress ?p) 0)
     )
     :effect (and
-      (transferring ?m ?tr ?p ?l)
+      (transferring ?m ?tr ?p ?l1 ?l2)
       (not (manip-free ?m))         ; Robots are busy during transfer
       (not (transport-free ?tr))
     )
@@ -101,8 +103,8 @@
   ;; Progress increases steadily over time while transferring.
   ;; ============================================================
   (:process transfer-process
-    :parameters (?m - manip-robot ?tr - transport-robot ?p - package ?l - location)
-    :precondition (transferring ?m ?tr ?p ?l)
+    :parameters (?m - manip-robot ?tr - transport-robot ?p - package ?l1 - location ?l2 - location)
+    :precondition (transferring ?m ?tr ?p ?l1 ?l2)
     :effect (increase (transfer-progress ?p) (* #t 10.0))
   )
 
@@ -111,14 +113,14 @@
   ;; Requires careful timing: must execute when progress is 80-99.
   ;; ============================================================
   (:action finish-transfer
-    :parameters (?m - manip-robot ?tr - transport-robot ?p - package ?l - location)
+    :parameters (?m - manip-robot ?tr - transport-robot ?p - package ?l1 - location ?l2 - location)
     :precondition (and
-      (transferring ?m ?tr ?p ?l)
+      (transferring ?m ?tr ?p ?l1 ?l2)
       (>= (transfer-progress ?p) 80)
       (<= (transfer-progress ?p) 99)
     )
     :effect (and
-      (not (transferring ?m ?tr ?p ?l))
+      (not (transferring ?m ?tr ?p ?l1 ?l2))
       (transport-carrying ?tr ?p)
       (not (manip-holding ?m  ?p))
       (gripper-empty  ?m)
@@ -135,18 +137,18 @@
   ;; The package is dropped on the floor and transfer fails.
   ;; ============================================================
   (:event transfer-timeout
-    :parameters (?m - manip-robot ?tr - transport-robot ?p - package ?l - location)
+    :parameters (?m - manip-robot ?tr - transport-robot ?p - package ?l1 - location ?l2 - location)
     :precondition (and
-      (transferring ?m ?tr ?p ?l)
+      (transferring ?m ?tr ?p ?l1 ?l2)
       (>= (transfer-progress ?p) 100)
     )
     :effect (and
-      (not (transferring ?m ?tr ?p ?l))
+      (not (transferring ?m ?tr ?p ?l1 ?l2))
       (assign (transfer-progress ?p) 0)
       
-      ;; Penalty: Package drops on the floor
+      ;; Penalty: Package drops on the floor at the transport robot's location
       (not (manip-holding ?m ?p))
-      (package-at ?p ?l)
+      (package-at ?p ?l2)
       (gripper-empty ?m)
       
       ;; Robots become free to try picking it up again
@@ -156,10 +158,11 @@
   )
   
   (:action manip-unload-from-transport
-    :parameters (?r  - manip-robot ?tr - transport-robot ?p  - package ?l  - location)
+    :parameters (?r  - manip-robot ?tr - transport-robot ?p  - package ?l1 - location ?l2 - location)
     :precondition (and
-      (manip-at           ?r  ?l)
-      (transport-at       ?tr ?l)
+      (manip-at           ?r  ?l1)
+      (transport-at       ?tr ?l2)
+      (connected          ?l1 ?l2)
       (transport-carrying ?tr ?p)
       (gripper-empty      ?r)
       (manip-free ?r)
@@ -180,10 +183,13 @@
       (connected  ?l1 ?l2)
       (manip-free ?r)
       (not (transit-area ?l2))
+      (not (occupied ?l2))
     )
     :effect (and
       (manip-at     ?r ?l2)
       (not (manip-at ?r ?l1))
+      (occupied     ?l2)
+      (not (occupied ?l1))
     )
   )
 
@@ -193,10 +199,13 @@
       (transport-at  ?r ?l1)
       (connected ?l1 ?l2)
       (transport-free ?r)
+      (not (occupied ?l2))
     )
     :effect (and
       (transport-at     ?r ?l2)
       (not (transport-at ?r ?l1))
+      (occupied     ?l2)
+      (not (occupied ?l1))
     )
   )
 

@@ -11,6 +11,7 @@
   )
   (:init
     (manip-at     manip1    shelf-A)
+    (occupied     shelf-A)
     (manip-free   manip1)
     (gripper-empty manip1)
     (package-at   package-1 shelf-A)
