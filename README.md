@@ -103,3 +103,6 @@ When running `problem_q2_combined.pddl`, the planner mathematically calculates a
 ![PDDL+ Output](pddl+.png)
 
 This final output mathematically proves the successful delivery of the package from Zone A to Zone C by navigating around spatial exclusions, respecting transit areas, and utilizing specialized robot capabilities in tandem across a hybrid continuous timeline.
+
+## Observation
+The submitted codes and report have been thoroughly reviewed by the teaching assistant, Omar Kashmar.
